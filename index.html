@@ -21,8 +21,10 @@
 // Valores aproximados por 100 g, compilados para demonstração com referências gerais de tabelas de composição de alimentos.
 // O dicionário inicial é limitado: alimentos não reconhecidos não são adivinhados.
 const DB=[
-{keys:['arroz cozido','arroz branco cozido','arroz branco'],name:'Arroz branco cozido',k:128,p:2.5,c:28.1,f:.2},
-{keys:['arroz integral cozido','arroz integral'],name:'Arroz integral cozido',k:124,p:2.6,c:25.8,f:1},
+{keys:['arroz branco cru','arroz cru'],name:'Arroz branco cru',k:358,p:7.2,c:78.8,f:.3},
+{keys:['arroz branco cozido','arroz cozido'],name:'Arroz branco cozido',k:128,p:2.5,c:28.1,f:.2},
+{keys:['arroz integral cru'],name:'Arroz integral cru',k:360,p:7.3,c:77.5,f:1.9},
+{keys:['arroz integral cozido'],name:'Arroz integral cozido',k:124,p:2.6,c:25.8,f:1},
 {keys:['feijao cozido','feijao carioca cozido','feijao carioca'],name:'Feijão carioca cozido',k:76,p:4.8,c:13.6,f:.5},
 {keys:['feijao preto cozido','feijao preto'],name:'Feijão preto cozido',k:77,p:4.5,c:14,f:.5},
 {keys:['frango grelhado','peito de frango grelhado','frango grelhado sem pele'],name:'Frango grelhado',k:159,p:32,c:0,f:2.5},
@@ -58,7 +60,40 @@ const DB=[
 const meals=['Café da manhã','Almoço','Lanche da manhã','Lanche da tarde','Jantar','Ceia'];let entries=[];let pending=[];
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 function parseLines(text){return text.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).map(raw=>{let m=raw.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gramas?)\b/i);let grams=m?Number(m[1].replace(',','.'))*(m[2].toLowerCase()==='kg'?1000:1):null;let cleaned=raw.replace(/\d+(?:[.,]\d+)?\s*(kg|g|gramas?)\b/i,' ').replace(/\b(de|do|da|dos|das)\b/gi,' ').replace(/[()]/g,' ').replace(/\s+/g,' ').trim();if(!grams){let unit=cleaned.match(/\b(\d+)\s*(ovos?|unidades?|fatias?)\b/i);if(unit&&/ovo/.test(norm(cleaned))){grams=Number(unit[1])*50;cleaned=cleaned.replace(unit[0],' ').trim()}else if(/\b(1|uma|um)\s+ovo\b/i.test(norm(raw))){grams=50;cleaned=cleaned.replace(/\b(1|uma|um)\s+ovo\b/i,' ').trim()}}return{raw,grams,cleaned,db:findFood(cleaned,raw)}})}
-function findFood(cleaned,raw){let n=norm(cleaned+' '+raw);let candidates=DB.map(d=>({d,score:Math.max(...d.keys.map(k=>{let nk=norm(k);return n.includes(nk)?nk.length:0}))})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);return candidates[0]?.d||null}
+function findFood(cleaned,raw){
+  const n = norm(cleaned + ' ' + raw);
+
+  const wantsRaw = /\b(cru|crua)\b/.test(n);
+  const wantsCooked = /\b(cozido|cozida|cozidos|cozidas)\b/.test(n);
+  const wantsIntegral = /\bintegral\b/.test(n);
+  const wantsWhiteRice = /\barroz\b/.test(n) && !wantsIntegral;
+
+  if (/\barroz\b/.test(n)) {
+    if (wantsIntegral) {
+      if (wantsRaw) return DB.find(d => d.name === 'Arroz integral cru') || null;
+      if (wantsCooked) return DB.find(d => d.name === 'Arroz integral cozido') || null;
+      return null;
+    }
+
+    if (wantsWhiteRice) {
+      if (wantsRaw) return DB.find(d => d.name === 'Arroz branco cru') || null;
+      if (wantsCooked) return DB.find(d => d.name === 'Arroz branco cozido') || null;
+      return null;
+    }
+  }
+
+  const candidates = DB.map(d => ({
+    d,
+    score: Math.max(...d.keys.map(k => {
+      const nk = norm(k);
+      return n.includes(nk) ? nk.length : 0;
+    }))
+  }))
+  .filter(x => x.score > 0)
+  .sort((a,b) => b.score - a.score);
+
+  return candidates[0]?.d || null;
+}
 function fmt(n){return (Math.round(n*10)/10).toLocaleString('pt-BR',{maximumFractionDigits:1})}
 function analyze(){const parsed=parseLines(document.getElementById('foods').value);if(!parsed.length){setStatus('Escreva pelo menos um alimento e sua quantidade.');return}pending=parsed.map((x,i)=>({...x,id:Date.now()+i}));renderPreview();}
 function renderPreview(){let el=document.getElementById('preview');el.innerHTML='';let good=0;pending.forEach((x,i)=>{let box=document.createElement('div');box.className='meal-block';let label=x.db?x.db.name:'Alimento não reconhecido';let kcal=x.db&&x.grams?x.db.k*x.grams/100:null;if(x.db&&x.grams)good++;box.innerHTML=`<div class="meal-head"><strong>${esc(label)}</strong><span>${kcal===null?'—':fmt(kcal)+' kcal'}</span></div><div class="hint">Texto: ${esc(x.raw)} · Quantidade: ${x.grams?fmt(x.grams)+' g':'não identificada'}</div>${!x.db?'<div class="hint" style="color:#a52b5c">Não reconheci este alimento. Tente usar um nome simples (ex.: arroz cozido) ou retire este item.</div>':''}${x.db&&!x.grams?'<div class="hint" style="color:#a52b5c">Não encontrei a quantidade em gramas. Escreva, por exemplo, 100 g de '+esc(x.db.name.toLowerCase())+'.</div>':''}<div class="hint">${x.db&&x.grams?'P '+fmt(x.db.p*x.grams/100)+' g · C '+fmt(x.db.c*x.grams/100)+' g · G '+fmt(x.db.f*x.grams/100)+' g':''}</div><button class="remove" data-remove-preview="${i}">Remover item</button>`;el.appendChild(box)});el.querySelectorAll('[data-remove-preview]').forEach(b=>b.onclick=()=>{pending.splice(Number(b.dataset.removePreview),1);renderPreview()});document.getElementById('confirmActions').style.display=pending.length?'flex':'none';setStatus(good?`${good} item(ns) reconhecido(s). Confira antes de adicionar.`:'Confira os itens: nenhum alimento com quantidade foi reconhecido ainda.');}
