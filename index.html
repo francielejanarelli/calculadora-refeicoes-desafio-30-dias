@@ -43,7 +43,10 @@ const DB=[
 {keys:['maca','maçã'],name:'Maçã com casca',k:56,p:.3,c:15.2,f:0},
 {keys:['mamão','mamao'],name:'Mamão',k:45,p:.8,c:11.6,f:.1},
 {keys:['aveia','aveia em flocos'],name:'Aveia em flocos',k:394,p:13.9,c:66.6,f:8.5},
-{keys:['iogurte natural','iogurte natural integral'],name:'Iogurte natural integral',k:51,p:4.1,c:1.9,f:3},
+{keys:['iogurte natural integral'],name:'Iogurte natural integral',k:61,p:3.5,c:4.7,f:3.3},
+{keys:['iogurte natural desnatado'],name:'Iogurte natural desnatado',k:41,p:3.8,c:5.8,f:.3},
+{keys:['iogurte proteico'],name:'Iogurte proteico (estimativa genérica)',k:70,p:10,c:5,f:1},
+{keys:['iogurte de frutas','iogurte saborizado','iogurte com sabor'],name:'Iogurte de frutas/saborizado (estimativa genérica)',k:100,p:3.5,c:15,f:2},
 {keys:['leite integral'],name:'Leite integral',k:61,p:3.2,c:4.7,f:3.3},
 {keys:['queijo minas','queijo minas frescal'],name:'Queijo minas frescal',k:264,p:17.4,c:3.2,f:20.2},
 {keys:['alface'],name:'Alface',k:15,p:1.4,c:2.9,f:.2},
@@ -55,8 +58,20 @@ const DB=[
 {keys:['tapioca'],name:'Tapioca (goma hidratada preparada)',k:230,p:.2,c:57,f:0},
 {keys:['whey','whey protein'],name:'Whey protein (estimativa genérica)',k:400,p:80,c:8,f:6},
 {keys:['azeite'],name:'Azeite de oliva',k:884,p:0,c:0,f:100},
-{keys:['mandioca cozida','aipim cozido','macaxeira cozida','mandioca'],name:'Mandioca cozida',k:125,p:.6,c:30.1,f:.3}
-];
+{keys:['mandioca cozida','aipim cozido','macaxeira cozida','mandioca'],name:'Mandioca cozida',k:125,p:.6,c:30.1,f:.3},
+
+{keys:['pasta de amendoim','creme de amendoim'],name:'Pasta de amendoim (estimativa genérica)',k:588,p:25,c:20,f:50},
+{keys:['barra de proteina','barrinha de proteina'],name:'Barra de proteína (estimativa genérica)',k:350,p:30,c:35,f:10},
+{keys:['barra de cereais','barrinha de cereal','barra de cereal'],name:'Barra de cereais (estimativa genérica)',k:380,p:6,c:72,f:8},
+{keys:['mel'],name:'Mel',k:304,p:.3,c:82,f:0},
+
+{keys:['chocolate ao leite zero acucar','chocolate zero acucar ao leite'],name:'Chocolate ao leite zero açúcar (estimativa genérica)',k:490,p:7,c:38,f:35},
+{keys:['chocolate branco zero acucar','chocolate zero acucar branco'],name:'Chocolate branco zero açúcar (estimativa genérica)',k:520,p:6,c:45,f:36},
+{keys:['chocolate amargo zero acucar','chocolate meio amargo zero acucar','chocolate zero acucar amargo'],name:'Chocolate amargo zero açúcar (estimativa genérica)',k:480,p:6,c:35,f:38},
+
+{keys:['chocolate ao leite'],name:'Chocolate ao leite (estimativa genérica)',k:535,p:7.5,c:59,f:30},
+{keys:['chocolate branco'],name:'Chocolate branco (estimativa genérica)',k:539,p:6,c:59,f:32},
+{keys:['chocolate meio amargo','chocolate amargo','chocolate preto'],name:'Chocolate amargo/meio amargo (estimativa genérica)',k:546,p:5,c:46,f:36},];
 const meals=['Café da manhã','Almoço','Lanche da manhã','Lanche da tarde','Jantar','Ceia'];let entries=[];let pending=[];
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 function parseLines(text){return text.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).map(raw=>{let m=raw.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gramas?)\b/i);let grams=m?Number(m[1].replace(',','.'))*(m[2].toLowerCase()==='kg'?1000:1):null;let cleaned=raw.replace(/\d+(?:[.,]\d+)?\s*(kg|g|gramas?)\b/i,' ').replace(/\b(de|do|da|dos|das)\b/gi,' ').replace(/[()]/g,' ').replace(/\s+/g,' ').trim();if(!grams){let unit=cleaned.match(/\b(\d+)\s*(ovos?|unidades?|fatias?)\b/i);if(unit&&/ovo/.test(norm(cleaned))){grams=Number(unit[1])*50;cleaned=cleaned.replace(unit[0],' ').trim()}else if(/\b(1|uma|um)\s+ovo\b/i.test(norm(raw))){grams=50;cleaned=cleaned.replace(/\b(1|uma|um)\s+ovo\b/i,' ').trim()}}return{raw,grams,cleaned,db:findFood(cleaned,raw)}})}
